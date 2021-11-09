@@ -2,10 +2,13 @@
 
 require "curses"
 require_relative "header"
+require_relative "branches_window"
+
 
 Curses.init_screen
 Curses.curs_set(0)
 
 Changelogger::Header.standard_header
 
-#branches_win = Curses::Window.new(Curses.lines / 2 - 1, Curses.cols / 2 - 1, 0, 0)
+Changelogger::BranchWindow.new
+
