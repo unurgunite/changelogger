@@ -8,7 +8,7 @@ require_relative "branches_window"
 Curses.init_screen
 Curses.curs_set(0)
 
-Changelogger::Header.standard_header
+Changelogger::Header.new
 
 Changelogger::BranchWindow.new
 
