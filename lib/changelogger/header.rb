@@ -3,12 +3,18 @@
 module Changelogger # :nodoc:
   # +Changelogger::Header+ class is an interface for header of TUI
   class Header
-    
     # +Changelogger::Header.new+                    -> object
     #
+    # @param [Integer] height Value of window height
+    # @param [Integer] width Value of window width
+    # @param [Integer] top Value of window position relative to the top of the last
+    # @param [Integer] left Value of window position relative to the left of the last
     # @return [object]
-    # An alias to {Changelogger::Header}'s class method +standard_header+
-    def initialize
+    def initialize(height: 0, width: Curses.cols, top: 0, left: 0)
+      @height = height
+      @width = width
+      @top = top
+      @left = left
       header_win
       line
     end
@@ -21,10 +27,6 @@ module Changelogger # :nodoc:
     # @return [object]
     # +Changelogger::Header.header_win+ method is used to initialize header's frame
     def header_win
-      @height = 0
-      @width = Curses.cols
-      @top = 0
-      @left = 0
       @header_win = Curses::Window.new(@height, @width, @top, @left)
       @header_win.box(" ", " ", " ")
     end
@@ -38,19 +40,6 @@ module Changelogger # :nodoc:
       line = @header_win.subwin(0, @width, @top, @left)
       line.addstr(" Changelogger #{Changelogger::VERSION} ".center(@width, "="))
       line.refresh
-      line.getch
     end
-
-    class << self
-      alias standard_header new
-    end
-    #     # +Changelogger::Header.standard_header+  -> object
-    #     #
-    #     # @return [object]
-    #     # +Changelogger::Header.line+ method generates util's header object
-    #     def self.standard_header
-    #       header_win
-    #       line
-    #     end
   end
 end
