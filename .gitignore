@@ -14,3 +14,7 @@
 
 # rspec failure tracking
 .rspec_status
+
+.graph
+.lorum
+
