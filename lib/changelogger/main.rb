@@ -6,6 +6,7 @@ require_relative "branches_window"
 
 Curses.init_screen
 Curses.curs_set(0)
+Curses.noecho
 
 Changelogger::Header.new
 

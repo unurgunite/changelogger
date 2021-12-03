@@ -7,7 +7,7 @@ module Changelogger
       # Name of the file, where to store graphs
       FILENAME = ".graph"
 
-      # +Changelogger::Graph.width+                 -> Integer
+      # +Changelogger::Graph.width+                         -> Integer
       #
       # +Changelogger::Graph.width+ returns the size of the biggest line in a file to then set this value as
       # default window object width attribute
@@ -17,7 +17,7 @@ module Changelogger
         IO.foreach(FILENAME).max_by(&:length).size
       end
 
-      # +Changelogger::Graph.build+                 -> String
+      # +Changelogger::Graph.build+                         -> String
       #
       # +Changelogger::Graph.build+ field builds graph object in a separate window
       # @return [String]
@@ -30,7 +30,7 @@ module Changelogger
 
   # +Changelogger::BranchWindow+ class represents an interface of a graph's window
   class BranchWindow
-    # +Changelogger::BranchWindow.new+            -> obj
+    # +Changelogger::BranchWindow.new+                      -> obj
     #
     # @param [Integer] height Value of window height
     # @param [Integer] width Value of window width
@@ -42,12 +42,14 @@ module Changelogger
       @width = width
       @top = top
       @left = left
+      @pos = 0
+      @lines = Graph.build.split('\n')
       branches
     end
 
     private
 
-    # +Changelogger::BranchWindow#branches+       -> value
+    # +Changelogger::BranchWindow#branches+                 -> value
     #
     # +Changelogger::BranchWindow#branches+ field is used to prepare window to show graph
     # @private
@@ -57,11 +59,37 @@ module Changelogger
       win.box
       # win.scrollok true
       win.refresh
-      win1 = win.subwin(@height - 2, @width - 2, @top, @left + 1)
-      win1.setpos(1, 1)
-      win1.addstr(Graph.build)
+      @win1 = win.subwin(@height - 2, @width - 2, @top, @left + 1)
+      @win1.keypad true
+      @win1.nodelay = true
+      @win1.setpos(1, 1)
+      @win1.addstr(Graph.build)
       # win1.refresh
-      win1.getch
+      # win1.getch
+      handle_keyboard_input
+    end
+
+    # +Changelogger::BranchWindow#handle_keyboard_input+    -> value
+    def handle_keyboard_input
+      case @win1.getch
+      when Curses::Key::UP, "k"
+        @pos -= 1 unless @pos <= 0
+        scroll
+      when Curses::Key::DOWN, "j"
+        @pos += 1 unless @pos >= @lines - 1 # lines(?)
+        scroll
+      when "q"
+        exit(0)
+      end
+    end
+
+    # +Changelogger::BranchWindow#scroll+                   -> value
+    def scroll
+      @pos ||= 0
+      @win1.clear
+      @win1.setpos(1, 1)
+      @lines.slice(@pos, @height - 1).each { |line| @win1 << "#{line}\n" }
+      @win1.refresh
     end
   end
 end
