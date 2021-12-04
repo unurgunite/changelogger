@@ -57,15 +57,15 @@ module Changelogger
     def branches
       win = Curses::Window.new(@height, @width, @top, @left)
       win.box
-      # win.scrollok true
+      win.scrollok true
       win.refresh
       @win1 = win.subwin(@height - 2, @width - 2, @top, @left + 1)
       @win1.keypad true
-      @win1.nodelay = true
+      #@win1.nodelay = true
       @win1.setpos(1, 1)
       @win1.addstr(Graph.build)
-      # win1.refresh
-      # win1.getch
+      @win1.refresh
+      # @win1.getch
       handle_keyboard_input
     end
 
@@ -76,7 +76,7 @@ module Changelogger
         @pos -= 1 unless @pos <= 0
         scroll
       when Curses::Key::DOWN, "j"
-        @pos += 1 unless @pos >= @lines - 1 # lines(?)
+        @pos += 1 unless @pos >= @lines.count - 1 # lines(?)
         scroll
       when "q"
         exit(0)
@@ -91,5 +91,9 @@ module Changelogger
       @lines.slice(@pos, @height - 1).each { |line| @win1 << "#{line}\n" }
       @win1.refresh
     end
+
+    def move_highlight_up; end
+
+    def move_highlight_down; end
   end
 end
