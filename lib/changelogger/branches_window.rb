@@ -32,18 +32,27 @@ module Changelogger
   class BranchWindow
     # +Changelogger::BranchWindow.new+                      -> obj
     #
-    # @param [Integer] height Value of window height
+    # @param [Integer] max_height Value of window height if not limited by screen height
     # @param [Integer] width Value of window width
     # @param [Integer] top Value of window position relative to the top of the last
     # @param [Integer] left Value of window position relative to the left of the last
     # @return [object]
-    def initialize(height: 50, width: Graph.width + 20, top: 10, left: 0)
-      @height = height
+    def initialize(max_height: 50, width: Graph.width + 20, top: 1, left: 0)
+      screen_height = Curses.lines
+      @height = [screen_height - 1, max_height].min
+      @top = ((screen_height - @height) / 2).floor + top
+
       @width = width
-      @top = top
       @left = left
       @pos = 0
-      @lines = Graph.build.split('\n')
+
+      @sub_height = @height - 2
+      @sub_width = @width - 2
+      @sub_top = @top + 1
+      @sub_left = @left + 1
+
+      @lines = Graph.build.split("\n")
+
       branches
     end
 
@@ -59,36 +68,36 @@ module Changelogger
       win.box
       win.scrollok true
       win.refresh
-      @win1 = win.subwin(@height - 2, @width - 2, @top, @left + 1)
+
+      @win1 = win.subwin(@sub_height, @sub_width, @sub_top, @sub_left)
       @win1.keypad true
-      #@win1.nodelay = true
-      @win1.setpos(1, 1)
-      @win1.addstr(Graph.build)
-      @win1.refresh
-      # @win1.getch
+
+      redraw
+
       handle_keyboard_input
     end
 
     # +Changelogger::BranchWindow#handle_keyboard_input+    -> value
     def handle_keyboard_input
-      case @win1.getch
-      when Curses::Key::UP, "k"
-        @pos -= 1 unless @pos <= 0
-        scroll
-      when Curses::Key::DOWN, "j"
-        @pos += 1 unless @pos >= @lines.count - 1 # lines(?)
-        scroll
-      when "q"
-        exit(0)
+      loop do
+        case @win1.getch
+        when Curses::Key::UP, "k"
+          @pos -= 1 unless @pos <= 0
+          redraw
+        when Curses::Key::DOWN, "j"
+          @pos += 1 unless @pos >= @lines.count - @sub_height
+          redraw
+        when "q"
+          exit(0)
+        end
       end
     end
 
-    # +Changelogger::BranchWindow#scroll+                   -> value
-    def scroll
+    # +Changelogger::BranchWindow#redraw+                   -> value
+    def redraw
       @pos ||= 0
-      @win1.clear
-      @win1.setpos(1, 1)
-      @lines.slice(@pos, @height - 1).each { |line| @win1 << "#{line}\n" }
+      @win1.setpos(0, 0)
+      @win1.addstr(@lines.slice(@pos, @sub_height).map { |line| line.ljust @sub_width - 1, " " }.join("\n"))
       @win1.refresh
     end
 
