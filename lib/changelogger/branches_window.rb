@@ -78,6 +78,10 @@ module Changelogger
     end
 
     # +Changelogger::BranchWindow#handle_keyboard_input+    -> value
+    #
+    # +Changelogger::BranchWindow#handle_keyboard_input+ handles keyboard input to scroll the division
+    # @private
+    # @return [Object]
     def handle_keyboard_input
       loop do
         case @win1.getch
@@ -94,6 +98,10 @@ module Changelogger
     end
 
     # +Changelogger::BranchWindow#redraw+                   -> value
+    #
+    # +Changelogger::BranchWindow#redraw+ rerender window content
+    # @private
+    # @return [Object]
     def redraw
       @pos ||= 0
       @win1.setpos(0, 0)
