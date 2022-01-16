@@ -7,6 +7,7 @@ GEM
   remote: https://rubygems.org/
   specs:
     ast (2.4.2)
+    curses (1.4.3)
     diff-lcs (1.4.4)
     parallel (1.21.0)
     parser (3.0.3.1)
@@ -44,9 +45,11 @@ GEM
 
 PLATFORMS
   arm64-darwin-21
+  ruby
 
 DEPENDENCIES
   changelogger!
+  curses (~> 1.4)
   rake (~> 13.0)
   rspec (~> 3.0)
   rubocop (~> 1.7)
