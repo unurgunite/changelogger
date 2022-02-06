@@ -39,20 +39,19 @@ module Changelogger
     # @return [object]
     def initialize(max_height: 50, width: Graph.width + 20, top: 1, left: 0)
       screen_height = Curses.lines
+
       @height = [screen_height - 1, max_height].min
       @top = ((screen_height - @height) / 2).floor + top
-
       @width = width
       @left = left
-      @pos = 0
 
+      @pos = 0
       @sub_height = @height - 2
       @sub_width = @width - 2
       @sub_top = @top + 1
       @sub_left = @left + 1
 
       @lines = Graph.build.split("\n")
-
       branches
     end
 
@@ -73,7 +72,6 @@ module Changelogger
       @win1.keypad true
 
       redraw
-
       handle_keyboard_input
     end
 
@@ -105,7 +103,20 @@ module Changelogger
     def redraw
       @pos ||= 0
       @win1.setpos(0, 0)
+
+      commits = @lines.split("\n").map.with_index { |line, i| [line, i] }.filter { |line| line[0].matches(/commit [a-z0-9]+/) }.map { |line| line[1] }
+      @lines.each_with_index do |line, i|
+        if headers.contains i
+          commits.append [line]
+        else
+          commits.last.append line
+        end
+      end
+
+      @win1.attron(Curses::A_STANDOUT)
       @win1.addstr(@lines.slice(@pos, @sub_height).map { |line| line.ljust @sub_width - 1, " " }.join("\n"))
+      @win1.attroff(Curses::A_STANDOUT)
+
       @win1.refresh
     end
 
