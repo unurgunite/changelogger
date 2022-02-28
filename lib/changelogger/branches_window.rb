@@ -104,12 +104,12 @@ module Changelogger
       @pos ||= 0
       @win1.setpos(0, 0)
 
-      commits = @lines.split("\n").map.with_index { |line, i| [line, i] }.filter { |line| line[0].matches(/commit [a-z0-9]+/) }.map { |line| line[1] }
-      @lines.each_with_index do |line, i|
-        if headers.contains i
-          commits.append [line]
+      headers = @lines.each_with_index.filter_map { |line, i| i if line.match?(/commit [a-z0-9]+/) }
+      commits = @lines.each_with_index.reduce [] do |acc, (line, i)|
+        if headers.include? i
+          [*acc, [line]]
         else
-          commits.last.append line
+          [*acc[0..-2], [*acc.last, line]]
         end
       end
 
