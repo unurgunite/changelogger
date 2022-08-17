@@ -5,8 +5,8 @@ require_relative "lib/changelogger/version"
 Gem::Specification.new do |spec|
   spec.name          = "changelogger"
   spec.version       = Changelogger::VERSION
-  spec.authors       = ["unurgunite"]
-  spec.email         = ["senpaiguru1488@gmail.com"]
+  spec.authors       = ["unurgunite", "SY573M404"]
+  spec.email         = ["senpaiguru1488@gmail.com", "admin@trolltom.xyz"]
 
   spec.summary       = "Gem to generate CHANGELOG.md"
   spec.description   = "A pretty simple gem to easily create changelogs according to your git commit history."
