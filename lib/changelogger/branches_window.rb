@@ -82,12 +82,31 @@ module Changelogger
     # @return [Object]
     def handle_keyboard_input
       loop do
+        headers = @lines.each_with_index.filter_map { |line, i| i if line.match?(/commit [a-z0-9]+/) }
+
         case @win1.getch
         when Curses::Key::UP, "k"
-          @pos -= 1 unless @pos <= 0
+          if headers.include? @pos
+            prev_header = headers[[headers.index(@pos) - 1, 0].max]
+
+            if @pos - prev_header < @sub_height
+              @pos = prev_header
+            else
+              @pos = [@pos - @sub_height, 0].max
+            end
+          else
+            @pos -= 1 unless @pos <= 0
+          end
+
           redraw
         when Curses::Key::DOWN, "j"
-          @pos += 1 unless @pos >= @lines.count - @sub_height
+          next_header = headers.filter { |i| i > @pos }.first
+          if next_header && next_header - @pos <= @sub_height
+            @pos = next_header
+          else
+            @pos += 1 unless @pos >= @lines.count - @sub_height
+          end
+
           redraw
         when "q"
           exit(0)
