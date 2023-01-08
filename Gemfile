@@ -7,8 +7,8 @@ gemspec
 
 gem "rake", "~> 13.0"
 
-gem "rspec", "~> 3.0"
+gem "rspec"
 
-gem "rubocop", "~> 1.7"
+gem "rubocop", require: false
 
 gem "curses", "~> 1.4"
