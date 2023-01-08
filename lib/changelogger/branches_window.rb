@@ -89,11 +89,11 @@ module Changelogger
           if headers.include? @pos
             prev_header = headers[[headers.index(@pos) - 1, 0].max]
 
-            if @pos - prev_header < @sub_height
-              @pos = prev_header
-            else
-              @pos = [@pos - @sub_height, 0].max
-            end
+            @pos = if @pos - prev_header < @sub_height
+                     prev_header
+                   else
+                     [@pos - @sub_height, 0].max
+                   end
           else
             @pos -= 1 unless @pos <= 0
           end
@@ -132,15 +132,29 @@ module Changelogger
         end
       end
 
+      # @todo 1. Fix highlight height; 2. Fix scroll position.
+      # Highlight the current line
       @win1.attron(Curses::A_STANDOUT)
-      @win1.addstr(@lines.slice(@pos, @sub_height).map { |line| line.ljust @sub_width - 1, " " }.join("\n"))
+      # @win1.addstr(@lines.slice(@pos, @sub_height).map { |line| line.ljust @sub_width - 1, " " }.join("\n"))
+      @win1.addstr(@lines[@pos].ljust(@sub_width, " "))
       @win1.attroff(Curses::A_STANDOUT)
+
+      # Add the remaining lines without highlighting
+      @win1.addstr(@lines[@pos + 1, @sub_height - 1].map { |line| line.ljust @sub_width - 1, " " }.join("\n"))
 
       @win1.refresh
     end
 
-    def move_highlight_up; end
+    # @deprecated
+    def move_highlight_up
+      @highlight_line -= 1 if @highlight_line.positive?
+      redraw
+    end
 
-    def move_highlight_down; end
+    # @deprecated
+    def move_highlight_down
+      @highlight_line += 1 if @highlight_line < @lines.size - 1
+      redraw
+    end
   end
 end
