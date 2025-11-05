@@ -26,7 +26,7 @@ module Changelogger
       # Width of the widest graph line
       def width
         ensure! unless File.exist?(FILENAME)
-        ensure! # keep it fresh; comment this out if you prefer caching
+        ensure!
         max = 1
         IO.foreach(FILENAME) { |line| max = [max, line.rstrip.length].max }
         max

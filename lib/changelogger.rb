@@ -5,5 +5,4 @@ require_relative "changelogger/main"
 
 module Changelogger
   class Error < StandardError; end
-  # Your code goes here...
 end
