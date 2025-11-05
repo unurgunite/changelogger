@@ -3,7 +3,7 @@
 require_relative "lib/changelogger/version"
 
 Gem::Specification.new do |spec|
-  spec.name          = "changelogger"
+  spec.name          = "changelog-builder"
   spec.version       = Changelogger::VERSION
   spec.authors       = %w[unurgunite SY573M404]
   spec.email         = ["senpaiguru1488@gmail.com", "admin@trolltom.xyz"]

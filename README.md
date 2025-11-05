@@ -35,7 +35,7 @@ Works best on macOS/Linux terminals. Windows users: try WSL.
 Gemfile:
 
 ```ruby
-gem "changelogger"
+gem "changelog-builder"
 ```
 
 Then:
@@ -47,7 +47,7 @@ bundle install
 Or install globally:
 
 ```shell
-gem install changelogger
+gem install changelog-builder
 ```
 
 ## Usage
