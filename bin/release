@@ -34,7 +34,7 @@ function check_main_branch() {
 }
 
 function check_version_tag_exists() {
-  VERSION=$(ruby -e "require './lib/rubocop/sorted_methods_by_call/version'; puts RuboCop::SortedMethodsByCall::VERSION")
+  VERSION=$(ruby -e "require './lib/changelogger/version'; puts Changelogger::VERSION")
 
   if git rev-parse "v$VERSION" >/dev/null 2>&1; then
     log_error "Git tag v$VERSION already exists. Please update the version in version.rb first."
@@ -63,7 +63,7 @@ function confirm_release() {
 
 function build_gem() {
   log_success "Building gem..."
-  gem build rubocop-sorted_methods_by_call.gemspec
+  gem build changelog-builder.gemspec
 }
 
 function create_and_push_tag() {
@@ -74,7 +74,7 @@ function create_and_push_tag() {
 
 function publish_to_rubygems() {
   log_success "Publishing to RubyGems..."
-  gem push "rubocop-sorted_methods_by_call-$VERSION.gem"
+  gem push "changelog-builder-$VERSION.gem"
 }
 
 function main() {
