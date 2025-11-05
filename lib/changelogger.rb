@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require_relative "changelogger/version"
-require_relative "changelogger/main"
-
+# +Changelogger+ is the root namespace for the gem. It exposes the version and error class.
 module Changelogger
+  # +Changelogger::Error+ is a generic error raised by this library.
   class Error < StandardError; end
-  # Your code goes here...
 end
+
+require_relative "changelogger/version"

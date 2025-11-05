@@ -3,11 +3,27 @@
 require "curses"
 require_relative "header"
 require_relative "branches_window"
+require_relative "git"
+require_relative "versioner"
+require_relative "changelog_generator"
+require_relative "preview_window"
 
 Curses.init_screen
+Curses.cbreak
 Curses.curs_set(0)
 Curses.noecho
 
 Changelogger::Header.new
 
-Changelogger::BranchWindow.new
+win = Changelogger::BranchWindow.new
+selected = win.select_commits # closes screen on exit
+
+if selected.nil?
+  # ESC/q
+elsif selected.size >= 2
+  commits = Changelogger::Git.commits
+  path = Changelogger::ChangelogGenerator.generate(commits, selected, path: "CHANGELOG.md")
+  puts "Wrote #{path} ✅"
+else
+  puts "No CHANGELOG generated (need at least 2 commits)."
+end
