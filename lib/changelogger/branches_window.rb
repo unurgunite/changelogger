@@ -23,138 +23,218 @@ module Changelogger
       # @return [String]
       def build
         "No such file: #{Dir.pwd}/#{FILENAME}" unless File.file?(FILENAME)
-        File.read(".graph")
+        File.read(FILENAME)
       end
     end
   end
 
   # +Changelogger::BranchWindow+ class represents an interface of a graph's window
   class BranchWindow
-    # +Changelogger::BranchWindow.new+                      -> obj
-    #
-    # @param [Integer] max_height Value of window height if not limited by screen height
-    # @param [Integer] width Value of window width
-    # @param [Integer] top Value of window position relative to the top of the last
-    # @param [Integer] left Value of window position relative to the left of the last
-    # @return [object]
-    def initialize(max_height: 50, width: Graph.width + 20, top: 1, left: 0)
+    attr_reader :selected_shas
+
+    def initialize(max_height: 50, width: nil, top: 1, left: 0)
       screen_height = Curses.lines
+      screen_width  = Curses.cols
 
+      @lines  = Graph.build.split("\n")
       @height = [screen_height - 1, max_height].min
-      @top = ((screen_height - @height) / 2).floor + top
-      @width = width
-      @left = left
+      @top    = ((screen_height - @height) / 2).floor + top
+      @width  = width || [screen_width - 2, Graph.width + 4].min
+      @left   = left
 
-      @pos = 0
       @sub_height = @height - 2
-      @sub_width = @width - 2
-      @sub_top = @top + 1
-      @sub_left = @left + 1
+      @sub_width  = @width  - 2
+      @sub_top    = @top + 1
+      @sub_left   = @left + 1
 
-      @lines = Graph.build.split("\n")
-      branches
+      @headers = detect_headers(@lines)
+      @selected_header_idx = 0
+      @selected_header_idxs = [] # indices into @headers array
+
+      @offset     = 0
+      @cursor_row = 0
+
+      @fit_full_block = true
+
+      setup_windows
+      ensure_visible
+      redraw
+    end
+
+    def select_commits
+      handle_keyboard_input
+      @selected_shas || []
+    ensure
+      teardown
     end
 
     private
 
-    # +Changelogger::BranchWindow#branches+                 -> value
-    #
-    # +Changelogger::BranchWindow#branches+ field is used to prepare window to show graph
-    # @private
-    # @return [Object]
-    def branches
-      win = Curses::Window.new(@height, @width, @top, @left)
-      win.box
-      win.scrollok true
-      win.refresh
+    def setup_windows
+      frame = Curses::Window.new(@height, @width, @top, @left)
+      frame.box
+      frame.refresh
 
-      @win1 = win.subwin(@sub_height, @sub_width, @sub_top, @sub_left)
-      @win1.keypad true
-
-      redraw
-      handle_keyboard_input
+      @win1 = frame.subwin(@sub_height, @sub_width, @sub_top, @sub_left)
+      @win1.keypad(true)
+      @win1.scrollok(false)
     end
 
-    # +Changelogger::BranchWindow#handle_keyboard_input+    -> value
-    #
-    # +Changelogger::BranchWindow#handle_keyboard_input+ handles keyboard input to scroll the division
-    # @private
-    # @return [Object]
+    def teardown
+      Curses.close_screen
+    rescue StandardError
+      # ignore
+    end
+
+    def detect_headers(lines)
+      lines.each_index.select { |i| lines[i].match?(/commit [a-f0-9]{7,40}/) }
+    end
+
+    def header_line_abs
+      @headers[@selected_header_idx] || 0
+    end
+
+    def header_sha_at(abs_index)
+      line = @lines[abs_index] || ""
+      m = line.match(/commit ([a-f0-9]{7,40})/)
+      m && m[1]
+    end
+
+    def current_commit_range
+      start = header_line_abs
+      stop  = @headers[@selected_header_idx + 1] || @lines.length
+      (start...stop)
+    end
+
+    def ensure_visible(fit_full_block: @fit_full_block)
+      header_line = header_line_abs
+      stop        = @headers[@selected_header_idx + 1] || @lines.length
+      block_size  = stop - header_line
+
+      if header_line < @offset
+        @offset = header_line
+      elsif header_line >= @offset + @sub_height
+        @offset = header_line - (@sub_height - 1)
+      end
+
+      if fit_full_block && block_size <= @sub_height
+        @offset = stop - @sub_height if stop > @offset + @sub_height
+        @offset = header_line if header_line < @offset
+      end
+
+      @offset = [[@offset, 0].max, [@lines.length - @sub_height, 0].max].min
+      @cursor_row = header_line - @offset
+    end
+
+    def toggle_selection
+      idx = @selected_header_idx
+      if @selected_header_idxs.include?(idx)
+        @selected_header_idxs.delete(idx)
+      else
+        @selected_header_idxs << idx
+        @selected_header_idxs.sort!
+      end
+    end
+
+    def selected_shas_from_idxs
+      @selected_header_idxs.map { |h_idx| header_sha_at(@headers[h_idx]) }.compact
+    end
+
     def handle_keyboard_input
       loop do
-        headers = @lines.each_with_index.filter_map { |line, i| i if line.match?(/commit [a-z0-9]+/) }
-
-        case @win1.getch
+        ch = @win1.getch
+        case ch
         when Curses::Key::UP, "k"
-          if headers.include? @pos
-            prev_header = headers[[headers.index(@pos) - 1, 0].max]
-
-            @pos = if @pos - prev_header < @sub_height
-                     prev_header
-                   else
-                     [@pos - @sub_height, 0].max
-                   end
-          else
-            @pos -= 1 unless @pos <= 0
+          if @selected_header_idx.positive?
+            @selected_header_idx -= 1
+            ensure_visible
+            redraw
           end
-
-          redraw
         when Curses::Key::DOWN, "j"
-          next_header = headers.filter { |i| i > @pos }.first
-          if next_header && next_header - @pos <= @sub_height
-            @pos = next_header
-          else
-            @pos += 1 unless @pos >= @lines.count - @sub_height
+          if @selected_header_idx < @headers.length - 1
+            @selected_header_idx += 1
+            ensure_visible
+            redraw
           end
-
+        when Curses::Key::PPAGE
+          @selected_header_idx = [@selected_header_idx - 5, 0].max
+          ensure_visible
           redraw
-        when "q"
-          exit(0)
+        when Curses::Key::NPAGE
+          @selected_header_idx = [@selected_header_idx + 5, @headers.length - 1].min
+          ensure_visible
+          redraw
+        when "f"
+          @fit_full_block = !@fit_full_block
+          ensure_visible
+          redraw
+        when " "
+          toggle_selection
+          redraw
+        when "\r", "\n", 10, Curses::Key::ENTER
+          shas = selected_shas_from_idxs
+          if shas.size >= 2
+            @selected_shas = shas
+            break
+          else
+            flash_message("Select at least 2 commits (space)")
+          end
+        when "q", 27
+          @selected_shas = []
+          break
+        else
+          # noop
         end
       end
     end
 
-    # +Changelogger::BranchWindow#redraw+                   -> value
-    #
-    # +Changelogger::BranchWindow#redraw+ rerender window content
-    # @private
-    # @return [Object]
-    def redraw
-      @pos ||= 0
-      @win1.setpos(0, 0)
+    def flash_message(msg)
+      return if @sub_height <= 0 || @sub_width <= 0
 
-      headers = @lines.each_with_index.filter_map { |line, i| i if line.match?(/commit [a-z0-9]+/) }
-      commits = @lines.each_with_index.reduce [] do |acc, (line, i)|
-        if headers.include? i
-          [*acc, [line]]
+      @win1.setpos(@sub_height - 1, 0)
+      txt = msg.ljust(@sub_width, " ")[0, @sub_width]
+      @win1.attron(Curses::A_BOLD)
+      @win1.addstr(txt)
+      @win1.attroff(Curses::A_BOLD)
+      @win1.refresh
+      sleep(0.6)
+    end
+
+    def redraw
+      ensure_visible
+      @win1.erase
+
+      highlight = current_commit_range
+      selected_header_abs = @selected_header_idxs.map { |i| @headers[i] }.to_set
+
+      visible = @lines[@offset, @sub_height] || []
+      visible.each_with_index do |line, i|
+        idx = @offset + i
+        @win1.setpos(i, 0)
+        text = line.ljust(@sub_width, " ")[0, @sub_width]
+
+        # Mark selected headers with ✓ at the end
+        if selected_header_abs.include?(idx)
+          mark = " ✓"
+          text = text[0, [@sub_width - mark.size, 0].max] + mark
+        end
+
+        if highlight.cover?(idx)
+          @win1.attron(Curses::A_STANDOUT)
+          @win1.addstr(text)
+          @win1.attroff(Curses::A_STANDOUT)
         else
-          [*acc[0..-2], [*acc.last, line]]
+          @win1.addstr(text)
         end
       end
 
-      # @todo 1. Fix highlight height; 2. Fix scroll position.
-      # Highlight the current line
-      @win1.attron(Curses::A_STANDOUT)
-      # @win1.addstr(@lines.slice(@pos, @sub_height).map { |line| line.ljust @sub_width - 1, " " }.join("\n"))
-      @win1.addstr(@lines[@pos].ljust(@sub_width, " "))
-      @win1.attroff(Curses::A_STANDOUT)
-
-      # Add the remaining lines without highlighting
-      @win1.addstr(@lines[@pos + 1, @sub_height - 1].map { |line| line.ljust @sub_width - 1, " " }.join("\n"))
+      # clear tail lines
+      (visible.length...@sub_height).each do |i|
+        @win1.setpos(i, 0)
+        @win1.addstr(" " * @sub_width)
+      end
 
       @win1.refresh
-    end
-
-    # @deprecated
-    def move_highlight_up
-      @highlight_line -= 1 if @highlight_line.positive?
-      redraw
-    end
-
-    # @deprecated
-    def move_highlight_down
-      @highlight_line += 1 if @highlight_line < @lines.size - 1
-      redraw
     end
   end
 end
