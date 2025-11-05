@@ -12,6 +12,10 @@ non-interactive CLI in scripts.
 
 Works best on macOS/Linux terminals. Windows users: try WSL.
 
+![Repobeats](https://repobeats.axiom.co/api/embed/024f2221c22d7ca681093ed150c33e2e5453c237.svg "Repobeats analytics image")
+[![CI](https://github.com/unurgunite/changelogger/actions/workflows/ci.yml/badge.svg)](https://github.com/unurgunite/changelogger/actions)
+[![Gem Version](https://badge.fury.io/rb/changelogger.svg)](https://rubygems.org/gems/changelogger)
+
 * [Changelogger](#changelogger)
     * [Demo](#demo)
     * [Install](#install)
