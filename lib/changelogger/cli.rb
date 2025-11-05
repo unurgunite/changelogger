@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require "optparse"
-require "tmpdir"
-require "fileutils"
+require 'optparse'
+require 'tmpdir'
+require 'fileutils'
 
-require_relative "version"
-require_relative "git"
-require_relative "changelog_generator"
+require_relative 'version'
+require_relative 'git'
+require_relative 'changelog_generator'
 
 module Changelogger
   # +Changelogger::CLI+ provides both TUI and non-interactive CLI entrypoints.
@@ -29,35 +29,35 @@ module Changelogger
     def start(argv)
       mode         = :tui
       anchors      = []
-      output       = "CHANGELOG.md"
+      output       = 'CHANGELOG.md'
       dry_run      = false
       major        = 0
       minor_start  = 1
       base_patch   = 10
 
       parser = OptionParser.new do |o|
-        o.banner = "Usage: changelogger [options] [REPO]"
-        o.separator ""
-        o.separator "REPO can be:"
-        o.separator "  - local path (/path/to/repo)"
-        o.separator "  - GitHub slug (owner/repo)"
-        o.separator "  - git URL (https://... or git@...)"
-        o.separator ""
-        o.on("-g", "--generate", "Non-interactive: generate CHANGELOG from anchors") { mode = :generate }
-        o.on("-a", "--anchors x,y,z", Array, "Anchors (SHA/tag/branch), 2+ required in chronological order") do |v|
+        o.banner = 'Usage: changelogger [options] [REPO]'
+        o.separator ''
+        o.separator 'REPO can be:'
+        o.separator '  - local path (/path/to/repo)'
+        o.separator '  - GitHub slug (owner/repo)'
+        o.separator '  - git URL (https://... or git@...)'
+        o.separator ''
+        o.on('-g', '--generate', 'Non-interactive: generate CHANGELOG from anchors') { mode = :generate }
+        o.on('-a', '--anchors x,y,z', Array, 'Anchors (SHA/tag/branch), 2+ required in chronological order') do |v|
           anchors = v || []
         end
-        o.on("-o", "--output PATH", "Output file (default: CHANGELOG.md)") { |v| output = v }
-        o.on("--major N", Integer, "Major version (default: 0)") { |v| major = v }
-        o.on("--minor-start N", Integer, "Minor start index (default: 1)") { |v| minor_start = v }
-        o.on("--base-patch N", Integer, "Patch spacing base (default: 10)") { |v| base_patch = v }
-        o.on("--dry-run", "Print to stdout (do not write file)") { dry_run = true }
-        o.on("--tui", "Force interactive TUI (default if no --generate)") { mode = :tui }
-        o.on("-v", "--version", "Print version") do
+        o.on('-o', '--output PATH', 'Output file (default: CHANGELOG.md)') { |v| output = v }
+        o.on('--major N', Integer, 'Major version (default: 0)') { |v| major = v }
+        o.on('--minor-start N', Integer, 'Minor start index (default: 1)') { |v| minor_start = v }
+        o.on('--base-patch N', Integer, 'Patch spacing base (default: 10)') { |v| base_patch = v }
+        o.on('--dry-run', 'Print to stdout (do not write file)') { dry_run = true }
+        o.on('--tui', 'Force interactive TUI (default if no --generate)') { mode = :tui }
+        o.on('-v', '--version', 'Print version') do
           puts Changelogger::VERSION
           return 0
         end
-        o.on("-h", "--help", "Show help") do
+        o.on('-h', '--help', 'Show help') do
           puts o
           return 0
         end
@@ -93,7 +93,7 @@ module Changelogger
     # @param [Integer] base_patch
     # @return [Integer] exit code
     def run_tui(output, major, minor_start, base_patch)
-      require_relative "tui"
+      require_relative 'tui'
       selected = Changelogger::TUI.run
       return 0 if selected.nil? # cancelled
 
@@ -110,7 +110,7 @@ module Changelogger
         puts "Wrote #{path} ✅"
         0
       else
-        puts "No CHANGELOG generated (need at least 2 commits)."
+        puts 'No CHANGELOG generated (need at least 2 commits).'
         1
       end
     end
@@ -127,7 +127,7 @@ module Changelogger
     # @return [Integer] exit code
     def run_generate(anchor_tokens, output, dry_run, major, minor_start, base_patch)
       if anchor_tokens.size < 2
-        warn "Error: --generate requires at least 2 --anchors (SHA/tag/branch)."
+        warn 'Error: --generate requires at least 2 --anchors (SHA/tag/branch).'
         return 2
       end
 
@@ -183,17 +183,18 @@ module Changelogger
         else
           url = looks_like_url?(repo_spec) ? repo_spec : github_slug_to_url(repo_spec)
           if url
-            tmp_dir = Dir.mktmpdir("changelogger-")
-            clone_ok = system("git", "clone", "--no-checkout", "--filter=blob:none", "--depth=1000", url, tmp_dir,
+            tmp_dir = Dir.mktmpdir('changelogger-')
+            clone_ok = system('git', 'clone', '--no-checkout', '--filter=blob:none', '--depth=1000', url, tmp_dir,
                               out: File::NULL, err: File::NULL)
-            clone_ok ||= system("git", "clone", url, tmp_dir)
+            clone_ok ||= system('git', 'clone', url, tmp_dir)
             if clone_ok
               Dir.chdir(tmp_dir)
             else
               warn "Failed to clone #{url}. Running in current directory."
             end
           else
-            warn "Unrecognized repo argument: #{repo_spec.inspect}. Expected a directory, GitHub slug (owner/repo), or git URL."
+            warn "Unrecognized repo argument: #{repo_spec.inspect}. Expected a directory, " \
+                 'GitHub slug (owner/repo), or git URL.'
           end
         end
       end
@@ -212,14 +213,14 @@ module Changelogger
     # +Changelogger::CLI#inside_git_repo?+          -> Bool
     # @return [Bool] true if inside a git work tree
     def inside_git_repo?
-      system("git", "rev-parse", "--is-inside-work-tree", out: File::NULL, err: File::NULL)
+      system('git', 'rev-parse', '--is-inside-work-tree', out: File::NULL, err: File::NULL)
     end
 
     # +Changelogger::CLI#looks_like_url?+           -> Bool
     # @param [String] s
     # @return [Bool]
     def looks_like_url?(s)
-      s =~ %r{\Ahttps?://} || s.start_with?("git@")
+      s =~ %r{\Ahttps?://} || s.start_with?('git@')
     end
 
     # +Changelogger::CLI#github_slug_to_url+        -> String, nil

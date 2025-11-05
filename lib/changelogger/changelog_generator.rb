@@ -14,10 +14,10 @@ module Changelogger
         versioned.map do |(_i, c, v)|
           lines = []
           lines << "## [#{v}] - #{c.date}"
-          lines << ""
+          lines << ''
           lines << "- #{c.subject} (#{c.short})"
           c.body.split("\n").each { |b| lines << "  #{b}" } unless c.body.nil? || c.body.empty?
-          lines << ""
+          lines << ''
           lines.join("\n")
         end.join("\n")
       end
@@ -40,7 +40,7 @@ module Changelogger
           full_idx = sha_to_idx.index(sha)
           full_idx || short_to_idx.index(sha[0, 7])
         end
-        raise "Need at least 2 valid commits selected" if anchor_indices.size < 2
+        raise 'Need at least 2 valid commits selected' if anchor_indices.size < 2
 
         versioned = Versioner.assign(commits, anchor_indices, major: major, minor_start: minor_start,
                                                               base_patch: base_patch)
@@ -60,7 +60,7 @@ module Changelogger
       # @param [Integer] minor_start
       # @param [Integer] base_patch
       # @return [String] path
-      def generate(commits, anchor_shas, path: "CHANGELOG.md", major: 0, minor_start: 1, base_patch: 10)
+      def generate(commits, anchor_shas, path: 'CHANGELOG.md', major: 0, minor_start: 1, base_patch: 10)
         content = render(commits, anchor_shas, major: major, minor_start: minor_start, base_patch: base_patch)
         File.write(path, content)
         path

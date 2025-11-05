@@ -29,7 +29,7 @@ module Changelogger
     # @return [void]
     def header_win
       @header_win = Curses::Window.new(@height, @width, @top, @left)
-      @header_win.box(" ", " ", " ")
+      @header_win.box(' ', ' ', ' ')
     end
 
     # +Changelogger::Header.line+                   -> void
@@ -38,7 +38,7 @@ module Changelogger
     # @return [void]
     def line
       line = @header_win.subwin(@height, @width, @top, @left)
-      line.addstr(" Changelogger #{Changelogger::VERSION} ".center(@width, "="))
+      line.addstr(" Changelogger #{Changelogger::VERSION} ".center(@width, '='))
       line.refresh
     end
   end

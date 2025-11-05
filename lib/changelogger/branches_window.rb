@@ -1,18 +1,17 @@
 # frozen_string_literal: true
 
-require "set"
-require "curses"
-require_relative "git"
-require_relative "versioner"
-require_relative "changelog_generator"
-require_relative "repo_info"
+require 'curses'
+require_relative 'git'
+require_relative 'versioner'
+require_relative 'changelog_generator'
+require_relative 'repo_info'
 
 module Changelogger
   # +Changelogger::Graph+ caches `git log --graph` output for rendering.
   class Graph
     class << self
       # +Changelogger::Graph::FILENAME+ stores the graph cache file name.
-      FILENAME = ".graph"
+      FILENAME = '.graph'
 
       # +Changelogger::Graph.ensure!+                 -> void
       #
@@ -23,9 +22,9 @@ module Changelogger
         if content.nil? || content.strip.empty?
           content = "(no git graph available — empty repo or not a git repository)\n"
         end
-        File.open(FILENAME, "w") { |f| f.write(content) }
+        File.write(FILENAME, content)
       rescue StandardError => e
-        File.open(FILENAME, "w") { |f| f.write("(error generating graph: #{e.message})\n") }
+        File.write(FILENAME, "(error generating graph: #{e.message})\n")
       end
 
       # +Changelogger::Graph.width+                   -> Integer
@@ -36,7 +35,7 @@ module Changelogger
         ensure! unless File.exist?(FILENAME)
         ensure!
         max = 1
-        IO.foreach(FILENAME) { |line| max = [max, line.rstrip.length].max }
+        File.foreach(FILENAME) { |line| max = [max, line.rstrip.length].max }
         max
       end
 
@@ -183,7 +182,7 @@ module Changelogger
     # Update titles with repo name/branch/HEAD and remote slug/identifier.
     # @return [void]
     def update_titles
-      dirty = @repo.dirty ? "*" : ""
+      dirty = @repo.dirty ? '*' : ''
       left_title = " Graph — #{@repo.name} [#{@repo.branch}@#{@repo.head_short}#{dirty}] "
       draw_title(@left_frame, left_title)
       right_id = @repo.remote_slug || @repo.name
@@ -199,7 +198,7 @@ module Changelogger
       width = frame.maxx
       text = label[0, [width - 4, 0].max]
       frame.setpos(0, 2)
-      frame.addstr(" " * [width - 4, 0].max)
+      frame.addstr(' ' * [width - 4, 0].max)
       frame.setpos(0, 2)
       frame.addstr(text)
       frame.refresh
@@ -211,10 +210,10 @@ module Changelogger
       update_titles
       if @focus == :left
         @left_frame.setpos(0, 2)
-        @left_frame.attron(Curses::A_BOLD) { @left_frame.addstr("") }
+        @left_frame.attron(Curses::A_BOLD) { @left_frame.addstr('') }
       else
         @right_frame.setpos(0, 2)
-        @right_frame.attron(Curses::A_BOLD) { @right_frame.addstr("") }
+        @right_frame.attron(Curses::A_BOLD) { @right_frame.addstr('') }
       end
       @left_frame.refresh
       @right_frame.refresh
@@ -223,12 +222,12 @@ module Changelogger
     # Help texts for the help bars.
     # @return [String]
     def left_help_text
-      "↑/↓ j/k move • Space select • Tab focus • Enter generate • PgUp/PgDn • f fit • r refresh • z zebra • </> split"
+      '↑/↓ j/k move • Space select • Tab focus • Enter generate • PgUp/PgDn • f fit • r refresh • z zebra • </> split'
     end
 
     # @return [String]
     def right_help_text
-      "↑/↓ j/k scroll • PgUp/PgDn • g top • G bottom • Tab focus"
+      '↑/↓ j/k scroll • PgUp/PgDn • g top • G bottom • Tab focus'
     end
 
     # Number of content rows (excluding help bar) on the left pane.
@@ -318,7 +317,7 @@ module Changelogger
     # @param [Integer] abs_index
     # @return [String, nil] short or full SHA token
     def header_sha_at(abs_index)
-      line = @lines[abs_index] || ""
+      line = @lines[abs_index] || ''
       m = line.match(/\b([a-f0-9]{7,40})\b/i)
       m && m[1]
     end
@@ -329,7 +328,7 @@ module Changelogger
     def find_header_index_by_sha(sha)
       return nil if sha.nil?
 
-      @headers.find_index { |abs| (@lines[abs] || "").include?(sha[0, 7]) }
+      @headers.find_index { |abs| (@lines[abs] || '').include?(sha[0, 7]) }
     end
 
     # Current commit block line range.
@@ -400,7 +399,7 @@ module Changelogger
           TXT
         end
 
-      @preview_lines = (content || "").split("\n")
+      @preview_lines = (content || '').split("\n")
       @preview_offset = 0 if reset_offset
       clamp_preview_offset
       redraw_right
@@ -472,19 +471,19 @@ module Changelogger
       @left_sub.erase
 
       @left_sub.setpos(0, 0)
-      help = left_help_text.ljust(@left_sub.maxx, " ")[0, @left_sub.maxx]
+      help = left_help_text.ljust(@left_sub.maxx, ' ')[0, @left_sub.maxx]
       addstr_with_attr(@left_sub, help, @style_help)
 
       content_h = left_content_rows
       highlight = current_commit_range
-      selected_header_abs = @selected_header_idxs.map { |i| @headers[i] }.to_set
+      selected_header_abs = @selected_header_idxs.to_set { |i| @headers[i] }
 
       visible = @lines[@offset, content_h] || []
       visible.each_with_index do |line, i|
         idx = @offset + i
         @left_sub.setpos(i + 1, 0)
 
-        text = line.ljust(@left_sub.maxx, " ")[0, @left_sub.maxx]
+        text = line.ljust(@left_sub.maxx, ' ')[0, @left_sub.maxx]
 
         attr =
           if selected_header_abs.include?(idx)
@@ -505,13 +504,13 @@ module Changelogger
         next unless sep_width.positive?
 
         @left_sub.setpos(i + 1, start_col)
-        pattern = "┄" * sep_width
+        pattern = '┄' * sep_width
         addstr_with_attr(@left_sub, pattern[0, sep_width], @style_sep)
       end
 
       (visible.length...content_h).each do |i|
         @left_sub.setpos(i + 1, 0)
-        @left_sub.addstr(" " * @left_sub.maxx)
+        @left_sub.addstr(' ' * @left_sub.maxx)
       end
 
       @left_sub.refresh
@@ -523,7 +522,7 @@ module Changelogger
       @right_sub.erase
 
       @right_sub.setpos(0, 0)
-      help = right_help_text.ljust(@right_sub.maxx, " ")[0, @right_sub.maxx]
+      help = right_help_text.ljust(@right_sub.maxx, ' ')[0, @right_sub.maxx]
       addstr_with_attr(@right_sub, help, @style_help)
 
       content_h = right_content_rows
@@ -531,12 +530,12 @@ module Changelogger
       visible = @preview_lines[@preview_offset, content_h] || []
       visible.each_with_index do |line, i|
         @right_sub.setpos(i + 1, 0)
-        @right_sub.addstr(line.ljust(@right_sub.maxx, " ")[0, @right_sub.maxx])
+        @right_sub.addstr(line.ljust(@right_sub.maxx, ' ')[0, @right_sub.maxx])
       end
 
       (visible.length...content_h).each do |i|
         @right_sub.setpos(i + 1, 0)
-        @right_sub.addstr(" " * @right_sub.maxx)
+        @right_sub.addstr(' ' * @right_sub.maxx)
       end
 
       @right_sub.refresh
@@ -550,7 +549,7 @@ module Changelogger
       return if win.maxy <= 0 || win.maxx <= 0
 
       win.setpos(win.maxy - 1, 0)
-      txt = msg.ljust(win.maxx, " ")[0, win.maxx]
+      txt = msg.ljust(win.maxx, ' ')[0, win.maxx]
       win.attron(Curses::A_BOLD)
       win.addstr(txt)
       win.attroff(Curses::A_BOLD)
@@ -574,26 +573,26 @@ module Changelogger
     def normalize_key(ch)
       return :none if ch.nil?
 
-      return :tab       if ch == "\t" || ch == 9 || (kc = key_const(:TAB)) && ch == kc
+      return :tab       if ch == "\t" || ch == 9 || ((kc = key_const(:TAB)) && ch == kc)
       return :shift_tab if (kc = key_const(:BTAB)) && ch == kc
-      return :quit if ["q", 27].include?(ch)
+      return :quit if ['q', 27].include?(ch)
 
       enter_key = key_const(:ENTER)
       return :enter if ch == "\r" || ch == "\n" || ch == 10 || ch == 13 || (enter_key && ch == enter_key)
 
-      return :up        if ch == key_const(:UP) || ch == "k"
-      return :down      if ch == key_const(:DOWN) || ch == "j"
+      return :up        if ch == key_const(:UP) || ch == 'k'
+      return :down      if ch == key_const(:DOWN) || ch == 'j'
       return :page_up   if ch == key_const(:PPAGE)
       return :page_down if ch == key_const(:NPAGE)
 
-      return :toggle  if ch == " "
-      return :fit     if ch == "f"
-      return :refresh if ch == "r"
-      return :zebra   if ch == "z"
-      return :g       if ch == "g"
-      return :G       if ch == "G"
-      return :lt      if ch == "<"
-      return :gt      if ch == ">"
+      return :toggle  if ch == ' '
+      return :fit     if ch == 'f'
+      return :refresh if ch == 'r'
+      return :zebra   if ch == 'z'
+      return :g       if ch == 'g'
+      return :G       if ch == 'G'
+      return :lt      if ch == '<'
+      return :gt      if ch == '>'
 
       :other
     end
@@ -618,7 +617,7 @@ module Changelogger
             @selected_shas = shas
             break
           else
-            flash_message(@left_sub, "Select at least 2 commits (space)")
+            flash_message(@left_sub, 'Select at least 2 commits (space)')
           end
         when :lt
           adjust_split(-4)

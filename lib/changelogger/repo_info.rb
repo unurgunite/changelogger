@@ -27,13 +27,13 @@ module Changelogger
       # Reads repo root, branch, HEAD short sha, origin url, and dirty flag.
       # @return [RepoInfo]
       def info
-        path = cmd("git rev-parse --show-toplevel").strip
+        path = cmd('git rev-parse --show-toplevel').strip
         name = path.empty? ? File.basename(Dir.pwd) : File.basename(path)
-        branch = cmd("git rev-parse --abbrev-ref HEAD").strip
-        branch = "(detached)" if branch.empty? || branch == "HEAD"
-        head_short = cmd("git rev-parse --short HEAD").strip
-        remote = cmd("git config --get remote.origin.url").strip
-        dirty = !cmd("git status --porcelain").strip.empty?
+        branch = cmd('git rev-parse --abbrev-ref HEAD').strip
+        branch = '(detached)' if branch.empty? || branch == 'HEAD'
+        head_short = cmd('git rev-parse --short HEAD').strip
+        remote = cmd('git config --get remote.origin.url').strip
+        dirty = !cmd('git status --porcelain').strip.empty?
 
         RepoInfo.new(
           name: name,
@@ -56,7 +56,7 @@ module Changelogger
       def cmd(s)
         `#{s} 2>/dev/null`
       rescue StandardError
-        ""
+        ''
       end
 
       # +Changelogger::Repo.to_slug+                    -> String, nil

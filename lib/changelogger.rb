@@ -6,4 +6,4 @@ module Changelogger
   class Error < StandardError; end
 end
 
-require_relative "changelogger/version"
+require_relative 'changelogger/version'
