@@ -27,7 +27,6 @@ jobs:
       - name: RuboCop (self‑check)
         run: |
           bundle exec rubocop
-          bundle exec rubocop --config test_project/.rubocop.test.yml lib/ -A
 
       - name: RSpec
         run: bundle exec rspec
@@ -48,8 +47,8 @@ jobs:
 
       - name: Build gem
         run: |
-          gem build rubocop-sorted_methods_by_call.gemspec
-          if [ ! -f rubocop-sorted_methods_by_call-*.gem ]; then
+          gem build changelog-builder.gemspec
+          if [ ! -f changelog-builder-*.gem ]; then
             echo "Gem build failed!"
             exit 1
           fi
@@ -57,11 +56,11 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: rubocop-sorted_methods_by_call-*.gem
+          files: changelog-builder-*.gem
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push gem to RubyGems.org
         env:
           RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
-        run: gem push rubocop-sorted_methods_by_call-*.gem
+        run: gem push changelog-builder-*.gem
