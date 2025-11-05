@@ -26,6 +26,7 @@ module Changelogger
 
       anchor_indices.each_with_index do |start_idx, j|
         break if j >= anchor_indices.size - 1
+
         end_idx = anchor_indices[j + 1]
         k = [end_idx - start_idx - 1, 0].max
         patches = distribute_patches(k, base: base_patch)

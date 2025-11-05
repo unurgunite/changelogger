@@ -9,9 +9,7 @@ module Changelogger
           lines << "## [#{v}] - #{c.date}"
           lines << ""
           lines << "- #{c.subject} (#{c.short})"
-          unless c.body.nil? || c.body.empty?
-            c.body.split("\n").each { |b| lines << "  #{b}" }
-          end
+          c.body.split("\n").each { |b| lines << "  #{b}" } unless c.body.nil? || c.body.empty?
           lines << ""
           lines.join("\n")
         end.join("\n")

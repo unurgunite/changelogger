@@ -34,7 +34,7 @@ module Changelogger
 
     def run
       loop do
-        case (ch = @sub.getch)
+        case @sub.getch
         when Curses::Key::UP, "k"
           @offset = [@offset - 1, 0].max
           redraw
@@ -56,7 +56,7 @@ module Changelogger
         when "G"
           @offset = [@lines.length - @sub_height, 0].max
           redraw
-        when "p", "q", 27 # p or q or ESC closes preview
+        when "q", 27 # p or q or ESC closes preview
           break
         when nil
           # ignore

@@ -15,7 +15,9 @@ module Changelogger
       # Regenerate the graph file (used if missing or on demand)
       def ensure!
         content = `git log --graph --decorate=short --date=short --pretty=format:'%h %d %s' 2>/dev/null`
-        content = "(no git graph available — empty repo or not a git repository)\n" if content.nil? || content.strip.empty?
+        if content.nil? || content.strip.empty?
+          content = "(no git graph available — empty repo or not a git repository)\n"
+        end
         File.open(FILENAME, "w") { |f| f.write(content) }
       rescue StandardError => e
         File.open(FILENAME, "w") { |f| f.write("(error generating graph: #{e.message})\n") }
@@ -66,7 +68,7 @@ module Changelogger
       @headers = detect_headers(@lines)
       @selected_header_idx  = 0
       @selected_header_idxs = [] # indices into @headers array
-      @offset     = 0
+      @offset = 0
       @fit_full_block = true
 
       # Right pane (preview) state
@@ -98,8 +100,7 @@ module Changelogger
     def compute_left_width(requested_left:)
       w = @width
       lw = requested_left.to_i
-      lw = [[lw, @left_min].max, w - @right_min].min
-      lw
+      [[lw, @left_min].max, w - @right_min].min
     end
 
     def setup_windows
@@ -224,7 +225,7 @@ module Changelogger
 
     # Detect commit header lines in `git log --graph` pretty output
     def detect_headers(lines)
-      lines.each_index.select { |i| lines[i] =~ /^\s*[\|\s\\\/]*\*\s/ }
+      lines.each_index.select { |i| lines[i] =~ %r{^\s*[|\s\\/]*\*\s} }
     end
 
     def header_line_abs
@@ -239,6 +240,7 @@ module Changelogger
 
     def find_header_index_by_sha(sha)
       return nil if sha.nil?
+
       @headers.find_index do |abs|
         (@lines[abs] || "").include?(sha[0, 7])
       end
@@ -263,12 +265,8 @@ module Changelogger
       end
 
       if fit_full_block && block_size <= rows
-        if stop > @offset + rows
-          @offset = stop - rows
-        end
-        if header_line < @offset
-          @offset = header_line
-        end
+        @offset = stop - rows if stop > @offset + rows
+        @offset = header_line if header_line < @offset
       end
 
       @offset = [[@offset, 0].max, [@lines.length - rows, 0].max].min
@@ -390,8 +388,6 @@ module Changelogger
             @style_selected
           elsif highlight.cover?(idx)
             @style_highlight
-          else
-            nil
           end
 
         addstr_with_attr(@left_sub, text, attr)
@@ -433,6 +429,7 @@ module Changelogger
 
     def flash_message(win, msg)
       return if win.maxy <= 0 || win.maxx <= 0
+
       win.setpos(win.maxy - 1, 0)
       txt = msg.ljust(win.maxx, " ")[0, win.maxx]
       win.attron(Curses::A_BOLD)
@@ -459,7 +456,8 @@ module Changelogger
       return :shift_tab if (kc = key_const(:BTAB)) && ch == kc
 
       # Quit / enter
-      return :quit  if ch == "q" || ch == 27
+      return :quit if ["q", 27].include?(ch)
+
       enter_key = key_const(:ENTER)
       return :enter if ch == "\r" || ch == "\n" || ch == 10 || ch == 13 || (enter_key && ch == enter_key)
 
@@ -511,7 +509,7 @@ module Changelogger
 
         when :up
           if @focus == :left
-            if @selected_header_idx > 0
+            if @selected_header_idx.positive?
               @selected_header_idx -= 1
               ensure_visible
               redraw_left

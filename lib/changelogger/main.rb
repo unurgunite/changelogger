@@ -9,7 +9,7 @@ require_relative "changelog_generator"
 require_relative "preview_window"
 
 Curses.init_screen
-Curses.cbreak      # <= add this
+Curses.cbreak
 Curses.curs_set(0)
 Curses.noecho
 
@@ -19,7 +19,7 @@ win = Changelogger::BranchWindow.new
 selected = win.select_commits # closes screen on exit
 
 if selected.nil?
-  # user cancelled with q/ESC — exit quietly (or puts "Cancelled." if you prefer)
+  # ESC/q
 elsif selected.size >= 2
   commits = Changelogger::Git.commits
   path = Changelogger::ChangelogGenerator.generate(commits, selected, path: "CHANGELOG.md")
