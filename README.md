@@ -185,7 +185,7 @@ Note:
 
 ## Requirements
 
-- Ruby 2.7+
+- Ruby 3.0+
 - Git installed
 - POSIX terminal (colors recommended)
 - Linux/macOS tested; Windows via WSL recommended
