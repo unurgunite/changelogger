@@ -3,7 +3,7 @@
 require_relative "lib/changelogger/version"
 
 Gem::Specification.new do |spec|
-  spec.name          = "changelogger"
+  spec.name          = "changelog-builder"
   spec.version       = Changelogger::VERSION
   spec.authors       = %w[unurgunite SY573M404]
   spec.email         = ["senpaiguru1488@gmail.com", "admin@trolltom.xyz"]
@@ -14,7 +14,7 @@ Gem::Specification.new do |spec|
   spec.license       = "MIT"
   spec.required_ruby_version = ">= 2.7.0"
 
-  spec.metadata["allowed_push_host"] = "https://github.com"
+  spec.metadata["allowed_push_host"] = "https://rubygems.org"
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/unurgunite/changelogger"
