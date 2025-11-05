@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "curses"
+require 'curses'
 
 module Changelogger
   # +Changelogger::PreviewWindow+ shows scrollable text in a framed window.
@@ -13,7 +13,7 @@ module Changelogger
     # @param [Integer] left left column position
     # @param [Integer, nil] height window height or computed from screen
     # @param [Integer, nil] width window width or computed from screen
-    def initialize(title: "Preview", content: "", top: 1, left: 0, height: nil, width: nil)
+    def initialize(title: 'Preview', content: '', top: 1, left: 0, height: nil, width: nil)
       @title = title
       screen_h = Curses.lines
       screen_w = Curses.cols
@@ -29,7 +29,7 @@ module Changelogger
       @sub_left   = @left + 1
 
       @offset = 0
-      @lines  = (content || "").split("\n")
+      @lines  = (content || '').split("\n")
 
       build_windows
       redraw
@@ -41,7 +41,7 @@ module Changelogger
     # @param [String] text new content
     # @return [void]
     def update_content(text)
-      @lines  = (text || "").split("\n")
+      @lines  = (text || '').split("\n")
       @offset = 0
       redraw
     end
@@ -53,10 +53,10 @@ module Changelogger
     def run
       loop do
         case @sub.getch
-        when Curses::Key::UP, "k"
+        when Curses::Key::UP, 'k'
           @offset = [@offset - 1, 0].max
           redraw
-        when Curses::Key::DOWN, "j"
+        when Curses::Key::DOWN, 'j'
           max_off = [@lines.length - @sub_height, 0].max
           @offset = [@offset + 1, max_off].min
           redraw
@@ -67,13 +67,13 @@ module Changelogger
           max_off = [@lines.length - @sub_height, 0].max
           @offset = [@offset + @sub_height, max_off].min
           redraw
-        when "g"
+        when 'g'
           @offset = 0
           redraw
-        when "G"
+        when 'G'
           @offset = [@lines.length - @sub_height, 0].max
           redraw
-        when "q", 27
+        when 'q', 27
           break
         end
       end
@@ -98,7 +98,7 @@ module Changelogger
 
     def draw_title
       title = " #{@title} "
-      bar = title.center(@width - 2, "─")
+      bar = title.center(@width - 2, '─')
       @frame.setpos(0, 1)
       @frame.addstr(bar[0, @width - 2])
     end
@@ -109,12 +109,12 @@ module Changelogger
       visible = @lines[@offset, @sub_height] || []
       visible.each_with_index do |line, i|
         @sub.setpos(i, 0)
-        @sub.addstr(line.ljust(@sub_width, " ")[0, @sub_width])
+        @sub.addstr(line.ljust(@sub_width, ' ')[0, @sub_width])
       end
 
       (visible.length...@sub_height).each do |i|
         @sub.setpos(i, 0)
-        @sub.addstr(" " * @sub_width)
+        @sub.addstr(' ' * @sub_width)
       end
 
       @sub.refresh

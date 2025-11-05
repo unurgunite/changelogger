@@ -36,7 +36,7 @@ module Changelogger
       # @return [Array<(Integer, Changelogger::Commit, String)>] each element is [index, commit, "x.y.z"]
       # @raise [ArgumentError] if fewer than 2 anchors are provided
       def assign(commits, anchor_indices, major: 0, minor_start: 1, base_patch: 10)
-        raise ArgumentError, "Need at least 2 anchors" if anchor_indices.size < 2
+        raise ArgumentError, 'Need at least 2 anchors' if anchor_indices.size < 2
 
         anchor_indices = anchor_indices.sort.uniq
         version_map = {}

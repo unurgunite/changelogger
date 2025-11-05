@@ -10,14 +10,8 @@
 .DS_Store
 
 .graph
-.lorum
 
 # rspec failure tracking
 .rspec_status
-
-.graph
-.lorum
-
-/.github
 
 *.gem

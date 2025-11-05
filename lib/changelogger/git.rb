@@ -26,7 +26,7 @@ module Changelogger
     # Uses: git log --date=short --reverse --pretty=format:'...'
     #
     # @return [Array<Commit>]
-    def self.commits # rubocop:disable Metrics/MethodLength]
+    def self.commits
       format = "%H#{SEP}%h#{SEP}%ad#{SEP}%s#{SEP}%b"
       cmd = "git log --date=short --reverse --pretty=format:'#{format}'"
       out = `#{cmd}`
@@ -36,8 +36,8 @@ module Changelogger
           sha: sha,
           short: short,
           date: date,
-          subject: (subject || "").strip,
-          body: (body || "").strip
+          subject: (subject || '').strip,
+          body: (body || '').strip
         )
       end
     end

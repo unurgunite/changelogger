@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require "curses"
-require_relative "header"
-require_relative "branches_window"
+require 'curses'
+require_relative 'header'
+require_relative 'branches_window'
 
 module Changelogger
   # +Changelogger::TUI+ wraps curses lifecycle and runs the side-by-side UI.

@@ -1,12 +1,12 @@
 # frozen_string_literal: false
 
-require "curses"
-require_relative "header"
-require_relative "branches_window"
-require_relative "git"
-require_relative "versioner"
-require_relative "changelog_generator"
-require_relative "preview_window"
+require 'curses'
+require_relative 'header'
+require_relative 'branches_window'
+require_relative 'git'
+require_relative 'versioner'
+require_relative 'changelog_generator'
+require_relative 'preview_window'
 
 Curses.init_screen
 Curses.cbreak
@@ -22,8 +22,8 @@ if selected.nil?
   # ESC/q
 elsif selected.size >= 2
   commits = Changelogger::Git.commits
-  path = Changelogger::ChangelogGenerator.generate(commits, selected, path: "CHANGELOG.md")
+  path = Changelogger::ChangelogGenerator.generate(commits, selected, path: 'CHANGELOG.md')
   puts "Wrote #{path} ✅"
 else
-  puts "No CHANGELOG generated (need at least 2 commits)."
+  puts 'No CHANGELOG generated (need at least 2 commits).'
 end
