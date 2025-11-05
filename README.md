@@ -13,6 +13,7 @@ non-interactive CLI in scripts.
 Works best on macOS/Linux terminals. Windows users: try WSL.
 
 * [Changelogger](#changelogger)
+    * [Demo](#demo)
     * [Install](#install)
     * [Usage](#usage)
         * [Interactive (TUI)](#interactive-tui)
@@ -22,6 +23,7 @@ Works best on macOS/Linux terminals. Windows users: try WSL.
     * [Library (programmatic)](#library-programmatic)
     * [UI details](#ui-details)
     * [Requirements](#requirements)
+    * [Documentation](#documentation)
     * [Troubleshooting](#troubleshooting)
     * [Contributing](#contributing)
     * [License](#license)
@@ -187,6 +189,11 @@ Note:
 - Git installed
 - POSIX terminal (colors recommended)
 - Linux/macOS tested; Windows via WSL recommended
+
+## Documentation
+
+Code is covered with YARD notation. All docs could be accessed from separate
+page https://unurgunite.github.io/changelog-builder_docs/
 
 ## Troubleshooting
 
