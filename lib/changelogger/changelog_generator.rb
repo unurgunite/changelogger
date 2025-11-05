@@ -15,7 +15,7 @@ module Changelogger
         end.join("\n")
       end
 
-      def render(commits, anchor_shas)
+      def render(commits, anchor_shas, major: 0, minor_start: 1, base_patch: 10)
         sha_to_idx = commits.map(&:sha)
         short_to_idx = commits.map(&:short)
 
@@ -23,17 +23,17 @@ module Changelogger
           full_idx = sha_to_idx.index(sha)
           full_idx || short_to_idx.index(sha[0, 7])
         end
-
         raise "Need at least 2 valid commits selected" if anchor_indices.size < 2
 
-        versioned = Versioner.assign(commits, anchor_indices)
+        versioned = Versioner.assign(commits, anchor_indices, major: major, minor_start: minor_start,
+                                                              base_patch: base_patch)
         header = "## [Unreleased]\n\n"
         sections = build_sections(versioned)
         [header, sections].join("\n")
       end
 
-      def generate(commits, anchor_shas, path: "CHANGELOG.md")
-        content = render(commits, anchor_shas)
+      def generate(commits, anchor_shas, path: "CHANGELOG.md", major: 0, minor_start: 1, base_patch: 10)
+        content = render(commits, anchor_shas, major: major, minor_start: minor_start, base_patch: base_patch)
         File.write(path, content)
         path
       end

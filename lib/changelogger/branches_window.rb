@@ -5,6 +5,7 @@ require "curses"
 require_relative "git"
 require_relative "versioner"
 require_relative "changelog_generator"
+require_relative "repo_info"
 
 module Changelogger
   # Renders and caches `git log --graph` into a file, auto-regenerating as needed.
@@ -12,7 +13,6 @@ module Changelogger
     class << self
       FILENAME = ".graph"
 
-      # Regenerate the graph file (used if missing or on demand)
       def ensure!
         content = `git log --graph --decorate=short --date=short --pretty=format:'%h %d %s' 2>/dev/null`
         if content.nil? || content.strip.empty?
@@ -23,7 +23,6 @@ module Changelogger
         File.open(FILENAME, "w") { |f| f.write("(error generating graph: #{e.message})\n") }
       end
 
-      # Width of the widest graph line
       def width
         ensure! unless File.exist?(FILENAME)
         ensure!
@@ -32,7 +31,6 @@ module Changelogger
         max
       end
 
-      # Read graph content, regenerating if needed
       def build
         ensure! unless File.exist?(FILENAME)
         File.read(FILENAME)
@@ -44,18 +42,20 @@ module Changelogger
   class BranchWindow
     attr_reader :selected_shas
 
-    CP_TITLE     = 1
     CP_HELP      = 2
     CP_HIGHLIGHT = 3  # current cursor commit block
     CP_SELECTED  = 4  # selected anchor commit header
+    CP_SEP       = 5  # thin separators
+    CP_ALT       = 6  # zebra alt shading
 
     def initialize(max_height: 50, top: 1, left: 0, left_width: nil)
       @top   = top
       @left  = left
       @width = Curses.cols - @left
       screen_height = Curses.lines
-
       @height = [screen_height - @top, max_height].min
+
+      @repo = Changelogger::Repo.info
 
       # Load graph and compute preferred left width
       @lines = Graph.build.split("\n")
@@ -68,8 +68,12 @@ module Changelogger
       @headers = detect_headers(@lines)
       @selected_header_idx  = 0
       @selected_header_idxs = [] # indices into @headers array
-      @offset = 0
-      @fit_full_block = true
+      @offset          = 0
+      @fit_full_block  = true
+      @zebra_blocks    = true
+
+      # Precompute block mapping and boundaries for separators/zebra
+      recompute_blocks!
 
       # Right pane (preview) state
       @commits = Changelogger::Git.commits # oldest -> newest
@@ -81,6 +85,7 @@ module Changelogger
 
       setup_windows
       init_colors
+      update_titles
       update_preview(reset_offset: true)
       ensure_visible
       redraw
@@ -109,7 +114,6 @@ module Changelogger
       # LEFT FRAME
       @left_frame = Curses::Window.new(@height, @left_w, @top, @left)
       @left_frame.box
-      draw_title(@left_frame, " Graph ")
 
       @left_sub = @left_frame.subwin(@height - 2, @left_w - 2, @top + 1, @left + 1)
       @left_sub.keypad(true)
@@ -120,7 +124,6 @@ module Changelogger
       right_x = @left + @left_w
       @right_frame = Curses::Window.new(@height, right_w, @top, right_x)
       @right_frame.box
-      draw_title(@right_frame, " Preview ")
 
       @right_sub = @right_frame.subwin(@height - 2, right_w - 2, @top + 1, right_x + 1)
       @right_sub.keypad(true)
@@ -146,31 +149,58 @@ module Changelogger
       # ignore
     end
 
+    def update_titles
+      # Build left title: repo name [branch@sha*]
+      dirty = @repo.dirty ? "*" : ""
+      left_title = " Graph — #{@repo.name} [#{@repo.branch}@#{@repo.head_short}#{dirty}] "
+      draw_title(@left_frame, left_title)
+
+      # Build right title: remote slug or path
+      right_id = @repo.remote_slug || @repo.name
+      right_title = " Preview — #{right_id} "
+      draw_title(@right_frame, right_title)
+    end
+
     def draw_title(frame, label)
+      width = frame.maxx
+      text = label[0, [width - 4, 0].max] # keep margins
       frame.setpos(0, 2)
-      frame.addstr(label)
+      frame.addstr(" " * [width - 4, 0].max) # clear previous
+      frame.setpos(0, 2)
+      frame.addstr(text)
       frame.refresh
     end
 
     def draw_focus
-      lf = " Graph "
-      rf = " Preview "
-      @left_frame.setpos(0, 2)
-      @right_frame.setpos(0, 2)
+      # Bold the current frame title text
+      lf = @left_frame
+      rf = @right_frame
+
+      # Re-draw to ensure we keep titles, then bold the focused one
+      update_titles
+
       if @focus == :left
-        @left_frame.attron(Curses::A_BOLD) { @left_frame.addstr(lf) }
-        @right_frame.addstr(rf)
+        lf.setpos(0, 2)
+        lf.attron(Curses::A_BOLD) { lf.addstr(line_at(lf)) }
       else
-        @left_frame.addstr(lf)
-        @right_frame.attron(Curses::A_BOLD) { @right_frame.addstr(rf) }
+        rf.setpos(0, 2)
+        rf.attron(Curses::A_BOLD) { rf.addstr(line_at(rf)) }
       end
-      @left_frame.refresh
-      @right_frame.refresh
+      lf.refresh
+      rf.refresh
+    end
+
+    def line_at(frame)
+      frame.maxx
+      frame.setpos(0, 2)
+      # There is no direct read; we just re-truncate label logic for simplicity.
+      # draw_focus calls update_titles first, so titles are already set.
+      ""
     end
 
     # Help bars
     def left_help_text
-      "↑/↓ j/k move • Space select • Tab focus • Enter generate • PgUp/PgDn • f fit • r refresh • </> split"
+      "↑/↓ j/k move • Space select • Tab focus • Enter generate • PgUp/PgDn • f fit • r refresh • z zebra • </> split"
     end
 
     def right_help_text
@@ -193,21 +223,26 @@ module Changelogger
           Curses.start_color
           Curses.use_default_colors if Curses.respond_to?(:use_default_colors)
         rescue StandardError
-          # ignore
         end
         Curses.init_pair(CP_HELP, Curses::COLOR_CYAN, -1)
         Curses.init_pair(CP_HIGHLIGHT, Curses::COLOR_BLACK, Curses::COLOR_CYAN)
         Curses.init_pair(CP_SELECTED, Curses::COLOR_BLACK, Curses::COLOR_YELLOW)
+        Curses.init_pair(CP_SEP, Curses::COLOR_BLUE, -1)
+        Curses.init_pair(CP_ALT, Curses::COLOR_WHITE, -1)
       end
 
       if Curses.has_colors?
         @style_help      = Curses.color_pair(CP_HELP) | Curses::A_DIM
         @style_highlight = Curses.color_pair(CP_HIGHLIGHT)
         @style_selected  = Curses.color_pair(CP_SELECTED) | Curses::A_BOLD
+        @style_sep       = Curses.color_pair(CP_SEP) | Curses::A_DIM
+        @style_alt       = Curses.color_pair(CP_ALT) | Curses::A_DIM
       else
         @style_help      = Curses::A_DIM
         @style_highlight = Curses::A_STANDOUT
         @style_selected  = Curses::A_BOLD
+        @style_sep       = Curses::A_DIM
+        @style_alt       = Curses::A_DIM
       end
     end
 
@@ -223,9 +258,18 @@ module Changelogger
 
     # ---------- Graph parsing / selection ----------
 
-    # Detect commit header lines in `git log --graph` pretty output
     def detect_headers(lines)
       lines.each_index.select { |i| lines[i] =~ %r{^\s*[|\s\\/]*\*\s} }
+    end
+
+    def recompute_blocks!
+      @block_index_by_line = Array.new(@lines.length, 0)
+      @boundary_set = Set.new
+      @headers.each_with_index do |start, j|
+        stop = @headers[j + 1] || @lines.length
+        (start...stop).each { |idx| @block_index_by_line[idx] = j }
+        @boundary_set << (stop - 1) if stop > start # last row of this block
+      end
     end
 
     def header_line_abs
@@ -241,9 +285,7 @@ module Changelogger
     def find_header_index_by_sha(sha)
       return nil if sha.nil?
 
-      @headers.find_index do |abs|
-        (@lines[abs] || "").include?(sha[0, 7])
-      end
+      @headers.find_index { |abs| (@lines[abs] || "").include?(sha[0, 7]) }
     end
 
     def current_commit_range
@@ -321,9 +363,14 @@ module Changelogger
       current_sha   = header_sha_at(header_line_abs)
       selected_shas = selected_shas_from_idxs
 
+      # refresh repo info and titles
+      @repo = Changelogger::Repo.info
+      update_titles
+
       Graph.ensure!
       @lines   = Graph.build.split("\n")
       @headers = detect_headers(@lines)
+      recompute_blocks!
 
       # restore current cursor position by SHA
       if current_sha
@@ -351,6 +398,7 @@ module Changelogger
       @left_w = new_left
       setup_windows
       init_colors
+      update_titles
       ensure_visible
       redraw
     end
@@ -381,16 +429,33 @@ module Changelogger
       visible.each_with_index do |line, i|
         idx = @offset + i
         @left_sub.setpos(i + 1, 0)
+
         text = line.ljust(@left_sub.maxx, " ")[0, @left_sub.maxx]
 
+        # Determine attributes
         attr =
           if selected_header_abs.include?(idx)
             @style_selected
           elsif highlight.cover?(idx)
             @style_highlight
+          elsif @zebra_blocks && @block_index_by_line[idx].to_i.odd?
+            @style_alt
           end
 
         addstr_with_attr(@left_sub, text, attr)
+
+        # Thin broken separator at commit boundary (in the trailing margin only)
+        next unless @boundary_set.include?(idx)
+
+        # Start drawing dashes after the end of visible content to avoid overwriting the graph
+        start_col = [line.rstrip.length, 0].max
+        start_col = [[start_col, 0].max, @left_sub.maxx - 1].min
+        sep_width = @left_sub.maxx - start_col
+        next unless sep_width.positive?
+
+        @left_sub.setpos(i + 1, start_col)
+        pattern = "┄" * sep_width # falls back fine if font lacks the glyph
+        addstr_with_attr(@left_sub, pattern[0, sep_width], @style_sep)
       end
 
       # Clear tail
@@ -471,6 +536,7 @@ module Changelogger
       return :toggle  if ch == " "
       return :fit     if ch == "f"
       return :refresh if ch == "r"
+      return :zebra   if ch == "z"
       return :g       if ch == "g"
       return :G       if ch == "G"
       return :lt      if ch == "<"
@@ -580,11 +646,13 @@ module Changelogger
             redraw_left
           end
 
+        when :zebra
+          if @focus == :left
+            @zebra_blocks = !@zebra_blocks
+            redraw_left
+          end
         when :refresh
           refresh_graph
-
-        else
-          # ignore
         end
       end
     end
