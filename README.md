@@ -115,13 +115,13 @@ changelogger --generate --anchors v1.0.0,v1.1.0 --dry-run
 
 Options:
 
-- --generate, -g: Non-interactive mode
-- --anchors x,y,z: Anchors (2+). Each token can be a full/short SHA, tag, or branch name
-- --output PATH, -o PATH: Output file (default: CHANGELOG.md)
-- --major N: Major version (default 0)
-- --minor-start N: Minor start index (default 1 -> 0.1.0, 0.2.0, ...)
-- --base-patch N: Patch spacing base (default 10)
-- --dry-run: Print to stdout
+- `--generate`, `-g`: Non-interactive mode
+- `--anchors x,y,z`: Anchors (2+). Each token can be a full/short SHA, tag, or branch name
+- `--output PATH`, `-o PATH`: Output file (default: CHANGELOG.md)
+- `--major N`: Major version (default 0)
+- `--minor-start N`: Minor start index (default 1 -> 0.1.0, 0.2.0, ...)
+- `--base-patch N`: Patch spacing base (default 10)
+- `--dry-run`: Print to stdout
 
 Exit codes:
 
@@ -136,7 +136,7 @@ Exit codes:
 - Major stays 0 by default (configurable)
 - Minor increments per anchor: 0.1.0, 0.2.0, 0.3.0, ...
 - In-between commits get patches spaced over 1..base (default 10):
-    - patches[i] = round((i+1) * base / (k+1)) with monotonic fixups
+    - `patches[i] = round((i+1) * base / (k+1))` with monotonic fixups
     - 1 between -> 0.1.5
     - 2 between -> 0.1.3, 0.1.7
     - 3 between -> 0.1.3, 0.1.5, 0.1.8
@@ -155,7 +155,7 @@ Each selected commit (anchors and in-between) gets:
 Use the building blocks directly:
 
 ```ruby
-require "changelogger/cli"
+require "changelogger"
 # or just require "changelogger"
 
 commits = Changelogger::Git.commits
@@ -170,7 +170,7 @@ Changelogger::ChangelogGenerator.generate(commits, anchors, path: "CHANGELOG.md"
 
 Note:
 
-- require "changelogger" only loads the module/version (no TUI).
+- `require "changelogger"` only loads the module/version (no TUI).
 - For the TUI specifically: require "changelogger/tui".
 
 ## UI details
