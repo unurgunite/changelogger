@@ -1,0 +1,3 @@
+--title "Changelogger Documentation"
+--output-dir doc
+lib/**/*.rb

@@ -9,11 +9,23 @@ require_relative "git"
 require_relative "changelog_generator"
 
 module Changelogger
+  # +Changelogger::CLI+ provides both TUI and non-interactive CLI entrypoints.
   class CLI
+    # +Changelogger::CLI.start+                     -> Integer
+    #
+    # Parses CLI arguments and runs either interactive TUI or headless generation.
+    # Returns an exit code (0 on success).
+    #
+    # @param [Array<String>] argv command line arguments (default: ARGV)
+    # @return [Integer] exit status code
     def self.start(argv = ARGV)
       new.start(argv)
     end
 
+    # +Changelogger::CLI#start+                     -> Integer
+    #
+    # @param [Array<String>] argv
+    # @return [Integer] exit code
     def start(argv)
       mode         = :tui
       anchors      = []
@@ -72,6 +84,14 @@ module Changelogger
 
     private
 
+    # +Changelogger::CLI#run_tui+                   -> Integer
+    #
+    # Launches TUI and writes the CHANGELOG if the user selected 2+ anchors.
+    # @param [String] output output path
+    # @param [Integer] major
+    # @param [Integer] minor_start
+    # @param [Integer] base_patch
+    # @return [Integer] exit code
     def run_tui(output, major, minor_start, base_patch)
       require_relative "tui"
       selected = Changelogger::TUI.run
@@ -95,6 +115,16 @@ module Changelogger
       end
     end
 
+    # +Changelogger::CLI#run_generate+              -> Integer
+    #
+    # Headless mode: resolves anchors, renders or writes the CHANGELOG.
+    # @param [Array<String>] anchor_tokens tokens (sha/tag/branch)
+    # @param [String] output path
+    # @param [Boolean] dry_run if true, print to stdout
+    # @param [Integer] major
+    # @param [Integer] minor_start
+    # @param [Integer] base_patch
+    # @return [Integer] exit code
     def run_generate(anchor_tokens, output, dry_run, major, minor_start, base_patch)
       if anchor_tokens.size < 2
         warn "Error: --generate requires at least 2 --anchors (SHA/tag/branch)."
@@ -132,6 +162,14 @@ module Changelogger
 
     # ---------- repo resolution ----------
 
+    # +Changelogger::CLI#with_repo+                 -> Integer
+    #
+    # Changes directory into a target repo (path/slug/url) for the duration of the block.
+    # Clones remotes into a temporary directory and cleans it up afterwards.
+    #
+    # @param [String, nil] repo_spec path, GitHub slug (owner/repo), or git URL
+    # @yield [] block to execute inside the repo
+    # @return [Integer] 0
     def with_repo(repo_spec)
       orig_dir = Dir.pwd
       tmp_dir = nil
@@ -171,14 +209,23 @@ module Changelogger
       FileUtils.remove_entry(tmp_dir) if tmp_dir && File.directory?(tmp_dir)
     end
 
+    # +Changelogger::CLI#inside_git_repo?+          -> Bool
+    # @return [Bool] true if inside a git work tree
     def inside_git_repo?
       system("git", "rev-parse", "--is-inside-work-tree", out: File::NULL, err: File::NULL)
     end
 
+    # +Changelogger::CLI#looks_like_url?+           -> Bool
+    # @param [String] s
+    # @return [Bool]
     def looks_like_url?(s)
       s =~ %r{\Ahttps?://} || s.start_with?("git@")
     end
 
+    # +Changelogger::CLI#github_slug_to_url+        -> String, nil
+    # Converts "owner/repo" or "github.com/owner/repo" into an https URL.
+    # @param [String] s
+    # @return [String, nil]
     def github_slug_to_url(s)
       if s =~ %r{\Ahttps?://(?:www\.)?github\.com/([\w.-]+/[\w.-]+)(?:\.git)?\z}i
         "https://github.com/#{::Regexp.last_match(1)}.git"
@@ -187,7 +234,11 @@ module Changelogger
       end
     end
 
-    # Resolve SHA/tag/branch to a full 40-char commit SHA
+    # +Changelogger::CLI#resolve_commit+            -> String, nil
+    #
+    # Resolves a token (sha/tag/branch) to a 40-char commit SHA.
+    # @param [String] token
+    # @return [String, nil]
     def resolve_commit(token)
       full = `git rev-parse -q --verify #{token}^{commit} 2>/dev/null`.strip
       $CHILD_STATUS.success? && full.match?(/\A[0-9a-f]{40}\z/i) ? full : nil

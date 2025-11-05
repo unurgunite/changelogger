@@ -52,6 +52,7 @@ GEM
     unicode-display_width (3.2.0)
       unicode-emoji (~> 4.1)
     unicode-emoji (4.1.0)
+    yard (0.9.37)
 
 PLATFORMS
   arm64-darwin-25
@@ -59,10 +60,11 @@ PLATFORMS
 
 DEPENDENCIES
   changelogger!
-  curses (~> 1.4)
+  curses
   rake (~> 13.0)
   rspec
   rubocop
+  yard
 
 BUNDLED WITH
    2.7.2

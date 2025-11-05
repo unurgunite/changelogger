@@ -3,7 +3,16 @@
 require "curses"
 
 module Changelogger
+  # +Changelogger::PreviewWindow+ shows scrollable text in a framed window.
   class PreviewWindow
+    # +Changelogger::PreviewWindow.new+                 -> PreviewWindow
+    #
+    # @param [String] title window title
+    # @param [String] content initial text
+    # @param [Integer] top top row position
+    # @param [Integer] left left column position
+    # @param [Integer, nil] height window height or computed from screen
+    # @param [Integer, nil] width window width or computed from screen
     def initialize(title: "Preview", content: "", top: 1, left: 0, height: nil, width: nil)
       @title = title
       screen_h = Curses.lines
@@ -26,12 +35,21 @@ module Changelogger
       redraw
     end
 
+    # +Changelogger::PreviewWindow#update_content+      -> void
+    #
+    # Replace content and reset scroll to top.
+    # @param [String] text new content
+    # @return [void]
     def update_content(text)
       @lines  = (text || "").split("\n")
       @offset = 0
       redraw
     end
 
+    # +Changelogger::PreviewWindow#run+                 -> void
+    #
+    # Enters the input loop. Returns when user closes the preview.
+    # @return [void]
     def run
       loop do
         case @sub.getch
@@ -40,8 +58,7 @@ module Changelogger
           redraw
         when Curses::Key::DOWN, "j"
           max_off = [@lines.length - @sub_height, 0].max
-          @offset = [@offset + 1, max_off].max([@offset + 1]).min
-          @offset = [@offset, max_off].min
+          @offset = [@offset + 1, max_off].min
           redraw
         when Curses::Key::PPAGE
           @offset = [@offset - @sub_height, 0].max
@@ -56,12 +73,8 @@ module Changelogger
         when "G"
           @offset = [@lines.length - @sub_height, 0].max
           redraw
-        when "q", 27 # p or q or ESC closes preview
+        when "q", 27
           break
-        when nil
-          # ignore
-        else
-          # ignore
         end
       end
     ensure
@@ -69,6 +82,8 @@ module Changelogger
     end
 
     private
+
+    # @!visibility private
 
     def build_windows
       @frame = Curses::Window.new(@height, @width, @top, @left)
@@ -97,7 +112,6 @@ module Changelogger
         @sub.addstr(line.ljust(@sub_width, " ")[0, @sub_width])
       end
 
-      # clear remaining rows
       (visible.length...@sub_height).each do |i|
         @sub.setpos(i, 0)
         @sub.addstr(" " * @sub_width)
